@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Planner Pro</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        /* Make it feel more like a desktop app */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 5px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // Lucide Icons - Updated checkbox to square
+        const ChevronDown = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>);
+        const ChevronRight = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"></polyline></svg>);
+        const Plus = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>);
+        const Calendar = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>);
+        const CheckSquare = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>);
+        const Square = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>);
+        const Filter = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>);
+        const List = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>);
+        const Clock = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>);
+        const Trash2 = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>);
+        const Star = ({ filled }) => filled ? (<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>) : (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>);
+        const Edit = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>);
+        const Play = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>);
+        const Pause = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>);
+        const BarChart = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></svg>);
+        const ArrowUpDown = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m21 16-4 4-4-4"></path><path d="M17 20V4"></path><path d="m3 8 4-4 4 4"></path><path d="M7 4v16"></path></svg>);
+
+        function StudentPlanner() {
+            const [activeView, setActiveView] = useState('subjects');
+            const [sortBy, setSortBy] = useState('dueDate');
+            const [subjects, setSubjects] = useState(() => {
+                const saved = localStorage.getItem('studentPlannerData');
+                if (saved) {
+                    return JSON.parse(saved);
+                }
+                return [
+                    {
+                        id: 1,
+                        name: 'Programming',
+                        color: 'bg-blue-500',
+                        expanded: false,
+                        tasks: [
+                            { id: 101, title: 'Complete JavaScript tutorial', dueDate: '2025-11-20', completed: false, priority: 'high', pinned: false },
+                            { id: 102, title: 'Build portfolio project', dueDate: '2025-11-25', completed: false, priority: 'high', pinned: false },
+                            { id: 103, title: 'Study data structures', dueDate: '2025-11-22', completed: false, priority: 'medium', pinned: false }
+                        ]
+                    },
+                    {
+                        id: 2,
+                        name: 'English',
+                        color: 'bg-green-500',
+                        expanded: false,
+                        tasks: [
+                            { id: 201, title: 'Read Chapter 5-7', dueDate: '2025-11-19', completed: false, priority: 'high', pinned: false },
+                            { id: 202, title: 'Essay draft on Shakespeare', dueDate: '2025-11-23', completed: false, priority: 'medium', pinned: false },
+                            { id: 203, title: 'Vocabulary quiz prep', dueDate: '2025-11-21', completed: false, priority: 'low', pinned: false }
+                        ]
+                    },
+                    {
+                        id: 3,
+                        name: 'Mandarin',
+                        color: 'bg-red-500',
+                        expanded: false,
+                        tasks: [
+                            { id: 301, title: 'Practice HSK 4 vocabulary', dueDate: '2025-11-20', completed: false, priority: 'medium', pinned: false },
+                            { id: 302, title: 'Complete workbook pages 45-50', dueDate: '2025-11-24', completed: false, priority: 'low', pinned: false },
+                            { id: 303, title: 'Watch Chinese movie with subtitles', dueDate: '2025-11-26', completed: false, priority: 'low', pinned: false }
+                        ]
+                    }
+                ];
+            });
+
+            const [events, setEvents] = useState(() => {
+                const saved = localStorage.getItem('studentPlannerEvents');
+                if (saved) {
+                    return JSON.parse(saved);
+                }
+                return [];
+            });
+
+            const [focusSessions, setFocusSessions] = useState(() => {
+                const saved = localStorage.getItem('focusSessions');
+                if (saved) {
+                    return JSON.parse(saved);
+                }
+                return [];
+            });
+
+            const [newSubjectName, setNewSubjectName] = useState('');
+            const [showAddSubject, setShowAddSubject] = useState(false);
+
+            useEffect(() => {
+                localStorage.setItem('studentPlannerData', JSON.stringify(subjects));
+            }, [subjects]);
+
+            useEffect(() => {
+                localStorage.setItem('studentPlannerEvents', JSON.stringify(events));
+            }, [events]);
+
+            useEffect(() => {
+                localStorage.setItem('focusSessions', JSON.stringify(focusSessions));
+            }, [focusSessions]);
+
+            const toggleSubject = (subjectId) => {
+                setSubjects(subjects.map(subject => 
+                    subject.id === subjectId ? { ...subject, expanded: !subject.expanded } : subject
+                ));
+            };
+
+            const toggleTaskComplete = (subjectId, taskId) => {
+                setSubjects(subjects.map(subject => 
+                    subject.id === subjectId ? {
+                        ...subject,
+                        tasks: subject.tasks.map(task => 
+                            task.id === taskId ? { ...task, completed: !task.completed } : task
+                        )
+                    } : subject
+                ));
+            };
+
+            const toggleTaskPin = (subjectId, taskId) => {
+                setSubjects(subjects.map(subject => 
+                    subject.id === subjectId ? {
+                        ...subject,
+                        tasks: subject.tasks.map(task => 
+                            task.id === taskId ? { ...task, pinned: !task.pinned } : task
+                        )
+                    } : subject
+                ));
+            };
+
+            const addSubject = () => {
+                if (newSubjectName.trim()) {
+                    const colors = ['bg-purple-500', 'bg-yellow-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500', 'bg-orange-500'];
+                    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                    setSubjects([...subjects, {
+                        id: Date.now(),
+                        name: newSubjectName,
+                        color: randomColor,
+                        expanded: false,
+                        tasks: []
+                    }]);
+                    setNewSubjectName('');
+                    setShowAddSubject(false);
+                }
+            };
+
+            const addTask = (subjectId, taskTitle, dueDate, priority) => {
+                if (taskTitle.trim()) {
+                    setSubjects(subjects.map(subject => 
+                        subject.id === subjectId ? {
+                            ...subject,
+                            tasks: [...subject.tasks, {
+                                id: Date.now(),
+                                title: taskTitle,
+                                dueDate: dueDate || new Date().toISOString().split('T')[0],
+                                completed: false,
+                                priority: priority || 'medium',
+                                pinned: false
+                            }]
+                        } : subject
+                    ));
+                }
+            };
+
+            const updateTask = (subjectId, taskId, updates) => {
+                setSubjects(subjects.map(subject => 
+                    subject.id === subjectId ? {
+                        ...subject,
+                        tasks: subject.tasks.map(task => 
+                            task.id === taskId ? { ...task, ...updates } : task
+                        )
+                    } : subject
+                ));
+            };
+
+            const updateSubject = (subjectId, updates) => {
+                setSubjects(subjects.map(subject => 
+                    subject.id === subjectId ? { ...subject, ...updates } : subject
+                ));
+            };
+
+            const deleteTask = (subjectId, taskId) => {
+                setSubjects(subjects.map(subject => 
+                    subject.id === subjectId ? {
+                        ...subject,
+                        tasks: subject.tasks.filter(task => task.id !== taskId)
+                    } : subject
+                ));
+            };
+
+            const deleteSubject = (subjectId) => {
+                setSubjects(subjects.filter(subject => subject.id !== subjectId));
+            };
+
+            const addEvent = (eventData) => {
+                setEvents([...events, { ...eventData, id: Date.now() }]);
+            };
+
+            const deleteEvent = (eventId) => {
+                setEvents(events.filter(event => event.id !== eventId));
+            };
+
+            const addFocusSession = (duration) => {
+                const today = new Date().toISOString().split('T')[0];
+                setFocusSessions([...focusSessions, {
+                    date: today,
+                    duration: duration,
+                    timestamp: Date.now()
+                }]);
+            };
+
+            const sortTasks = (tasks) => {
+                if (sortBy === 'priority') {
+                    const priorityOrder = { high: 1, medium: 2, low: 3 };
+                    return [...tasks].sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+                } else {
+                    return [...tasks].sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+                }
+            };
+
+            const getAllTasks = () => {
+                const allTasks = [];
+                subjects.forEach(subject => {
+                    subject.tasks.forEach(task => {
+                        allTasks.push({ ...task, subjectName: subject.name, subjectColor: subject.color, subjectId: subject.id });
+                    });
+                });
+                return sortTasks(allTasks);
+            };
+
+            const getPinnedTasks = () => {
+                return getAllTasks().filter(task => task.pinned && !task.completed);
+            };
+
+            const getTasksDueToday = () => {
+                const today = new Date().toISOString().split('T')[0];
+                return getAllTasks().filter(task => task.dueDate === today && !task.completed);
+            };
+
+            const getOverdueTasks = () => {
+                const today = new Date().toISOString().split('T')[0];
+                return getAllTasks().filter(task => task.dueDate < today && !task.completed);
+            };
+
+            const getTasksStats = () => {
+                const allTasks = getAllTasks();
+                const completed = allTasks.filter(t => t.completed).length;
+                const total = allTasks.length;
+                const pending = total - completed;
+                return { completed, total, pending };
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-8">
+                    <div className="max-w-7xl mx-auto">
+                        {/* Header */}
+                        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <div>
+                                    <h1 className="text-3xl font-bold text-slate-800">Study Planner Pro</h1>
+                                    <p className="text-slate-500 mt-1">Stay organized and ace your subjects</p>
+                                </div>
+                                <div className="flex gap-2 flex-wrap">
+                                    <button
+                                        onClick={() => setActiveView('subjects')}
+                                        className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                                            activeView === 'subjects' 
+                                                ? 'bg-blue-500 text-white shadow-md' 
+                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        }`}
+                                    >
+                                        <List />
+                                        Subjects
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveView('timeline')}
+                                        className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                                            activeView === 'timeline' 
+                                                ? 'bg-blue-500 text-white shadow-md' 
+                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        }`}
+                                    >
+                                        <Calendar />
+                                        Timeline
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveView('calendar')}
+                                        className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                                            activeView === 'calendar' 
+                                                ? 'bg-blue-500 text-white shadow-md' 
+                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        }`}
+                                    >
+                                        <Calendar />
+                                        Calendar
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveView('analytics')}
+                                        className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                                            activeView === 'analytics' 
+                                                ? 'bg-blue-500 text-white shadow-md' 
+                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        }`}
+                                    >
+                                        <BarChart />
+                                        Analytics
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Stats Bar */}
+                            <div className="grid grid-cols-3 gap-4 mt-4">
+                                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
+                                    <div className="text-2xl font-bold text-blue-600">{getTasksStats().pending}</div>
+                                    <div className="text-sm text-blue-600 font-medium">Pending Tasks</div>
+                                </div>
+                                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4">
+                                    <div className="text-2xl font-bold text-green-600">{getTasksStats().completed}</div>
+                                    <div className="text-sm text-green-600 font-medium">Completed</div>
+                                </div>
+                                <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4">
+                                    <div className="text-2xl font-bold text-orange-600">{getOverdueTasks().length}</div>
+                                    <div className="text-sm text-orange-600 font-medium">Overdue</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Focus Timer - Only show in subjects view */}
+                        {activeView === 'subjects' && <FocusTimer onSessionComplete={addFocusSession} />}
+
+                        {/* Pinned Tasks */}
+                        {getPinnedTasks().length > 0 && (
+                            <div className="bg-gradient-to-r from-purple-400 to-pink-400 rounded-2xl shadow-lg p-6 mb-6 text-white">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <Star filled={true} />
+                                    <h2 className="text-xl font-bold">Pinned Focus Tasks</h2>
+                                </div>
+                                <div className="space-y-2">
+                                    {getPinnedTasks().map(task => (
+                                        <div key={task.id} className="bg-white/20 backdrop-blur rounded-lg p-3 flex items-center gap-3">
+                                            <span className={`w-3 h-3 rounded-full ${task.subjectColor}`}></span>
+                                            <span className="font-medium flex-1">{task.title}</span>
+                                            <span className="text-sm bg-white/30 px-2 py-1 rounded">{task.subjectName}</span>
+                                            <button
+                                                onClick={() => toggleTaskPin(task.subjectId, task.id)}
+                                                className="text-white hover:text-yellow-200"
+                                            >
+                                                <Star filled={true} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Today's Focus */}
+                        {getTasksDueToday().length > 0 && (
+                            <div className="bg-gradient-to-r from-amber-400 to-orange-400 rounded-2xl shadow-lg p-6 mb-6 text-white">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <Clock />
+                                    <h2 className="text-xl font-bold">Due Today</h2>
+                                </div>
+                                <div className="space-y-2">
+                                    {getTasksDueToday().map(task => (
+                                        <div key={task.id} className="bg-white/20 backdrop-blur rounded-lg p-3 flex items-center gap-3">
+                                            <span className={`w-3 h-3 rounded-full ${task.subjectColor}`}></span>
+                                            <span className="font-medium flex-1">{task.title}</span>
+                                            <span className="text-sm bg-white/30 px-2 py-1 rounded">{task.subjectName}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Main Content */}
+                        {activeView === 'subjects' && (
+                            <SubjectsView
+                                subjects={subjects}
+                                sortBy={sortBy}
+                                setSortBy={setSortBy}
+                                onToggle={toggleSubject}
+                                onToggleTask={toggleTaskComplete}
+                                onTogglePin={toggleTaskPin}
+                                onAddTask={addTask}
+                                onUpdateTask={updateTask}
+                                onUpdateSubject={updateSubject}
+                                onDeleteTask={deleteTask}
+                                onDeleteSubject={deleteSubject}
+                                showAddSubject={showAddSubject}
+                                setShowAddSubject={setShowAddSubject}
+                                newSubjectName={newSubjectName}
+                                setNewSubjectName={setNewSubjectName}
+                                addSubject={addSubject}
+                                sortTasks={sortTasks}
+                            />
+                        )}
+
+                        {activeView === 'timeline' && (
+                            <TimelineView 
+                                tasks={getAllTasks()}
+                                sortBy={sortBy}
+                                setSortBy={setSortBy}
+                                onToggleTask={toggleTaskComplete}
+                                onTogglePin={toggleTaskPin}
+                                onUpdateTask={updateTask}
+                                onDeleteTask={deleteTask}
+                                sortTasks={sortTasks}
+                            />
+                        )}
+
+                        {activeView === 'calendar' && (
+                            <CalendarView
+                                tasks={getAllTasks()}
+                                events={events}
+                                onAddEvent={addEvent}
+                                onDeleteEvent={deleteEvent}
+                            />
+                        )}
+
+                        {activeView === 'analytics' && (
+                            <AnalyticsView focusSessions={focusSessions} />
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        function FocusTimer({ onSessionComplete }) {
+            const [isRunning, setIsRunning] = useState(false);
+            const [seconds, setSeconds] = useState(0);
+            const intervalRef = useRef(null);
+
+            useEffect(() => {
+                if (isRunning) {
+                    intervalRef.current = setInterval(() => {
+                        setSeconds(s => s + 1);
+                    }, 1000);
+                } else {
+                    if (intervalRef.current) {
+                        clearInterval(intervalRef.current);
+                    }
+                }
+                return () => {
+                    if (intervalRef.current) {
+                        clearInterval(intervalRef.current);
+                    }
+                };
+            }, [isRunning]);
+
+            const formatTime = (totalSeconds) => {
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const secs = totalSeconds % 60;
+                return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            };
+
+            const handleStop = () => {
+                if (seconds > 0) {
+                    onSessionComplete(seconds);
+                }
+                setIsRunning(false);
+                setSeconds(0);
+            };
+
+            return (
+                <div className="bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl shadow-lg p-6 mb-6 text-white">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h2 className="text-xl font-bold mb-2">Focus Session</h2>
+                            <div className="text-4xl font-mono font-bold">{formatTime(seconds)}</div>
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setIsRunning(!isRunning)}
+                                className="bg-white/20 hover:bg-white/30 backdrop-blur p-4 rounded-full transition-all"
+                            >
+                                {isRunning ? <Pause /> : <Play />}
+                            </button>
+                            {seconds > 0 && (
+                                <button
+                                    onClick={handleStop}
+                                    className="bg-white/20 hover:bg-white/30 backdrop-blur px-6 py-2 rounded-full transition-all font-medium"
+                                >
+                                    End Session
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function SubjectsView({ subjects, sortBy, setSortBy, onToggle, onToggleTask, onTogglePin, onAddTask, onUpdateTask, onUpdateSubject, onDeleteTask, onDeleteSubject, showAddSubject, setShowAddSubject, newSubjectName, setNewSubjectName, addSubject, sortTasks }) {
+            return (
+                <div>
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-bold text-slate-800">Your Subjects</h2>
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm text-slate-600">Sort by:</span>
+                            <button
+                                onClick={() => setSortBy(sortBy === 'dueDate' ? 'priority' : 'dueDate')}
+                                className="flex items-center gap-2 px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-medium transition-colors"
+                            >
+                                <ArrowUpDown />
+                                {sortBy === 'dueDate' ? 'Due Date' : 'Priority'}
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                        {subjects.map(subject => (
+                            <SubjectCard
+                                key={subject.id}
+                                subject={subject}
+                                onToggle={onToggle}
+                                onToggleTask={onToggleTask}
+                                onTogglePin={onTogglePin}
+                                onAddTask={onAddTask}
+                                onUpdateTask={onUpdateTask}
+                                onUpdateSubject={onUpdateSubject}
+                                onDeleteTask={onDeleteTask}
+                                onDeleteSubject={onDeleteSubject}
+                                sortTasks={sortTasks}
+                            />
+                        ))}
+
+                        {showAddSubject ? (
+                            <div className="bg-white rounded-2xl shadow-lg p-6">
+                                <input
+                                    type="text"
+                                    placeholder="Subject name..."
+                                    value={newSubjectName}
+                                    onChange={(e) => setNewSubjectName(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && addSubject()}
+                                    className="w-full px-4 py-2 border-2 border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 mb-3"
+                                    autoFocus
+                                />
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={addSubject}
+                                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                                    >
+                                        Add
+                                    </button>
+                                    <button
+                                        onClick={() => { setShowAddSubject(false); setNewSubjectName(''); }}
+                                        className="px-4 py-2 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300 transition-colors text-sm"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => setShowAddSubject(true)}
+                                className="bg-white rounded-2xl shadow-lg p-6 text-slate-400 hover:text-blue-500 hover:border-blue-500 border-2 border-dashed border-slate-200 transition-all flex flex-col items-center justify-center min-h-[200px]"
+                            >
+                                <Plus />
+                                <span className="mt-2">Add Subject</span>
+                            </button>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        function SubjectCard({ subject, onToggle, onToggleTask, onTogglePin, onAddTask, onUpdateTask, onUpdateSubject, onDeleteTask, onDeleteSubject, sortTasks }) {
+            const [showAddTask, setShowAddTask] = useState(false);
+            const [newTaskTitle, setNewTaskTitle] = useState('');
+            const [newTaskDate, setNewTaskDate] = useState('');
+            const [newTaskPriority, setNewTaskPriority] = useState('medium');
+            const [editingSubject, setEditingSubject] = useState(false);
+            const [editSubjectName, setEditSubjectName] = useState(subject.name);
+
+            const handleAddTask = () => {
+                if (newTaskTitle.trim()) {
+                    onAddTask(subject.id, newTaskTitle, newTaskDate, newTaskPriority);
+                    setNewTaskTitle('');
+                    setNewTaskDate('');
+                    setNewTaskPriority('medium');
+                    setShowAddTask(false);
+                }
+            };
+
+            const handleUpdateSubject = () => {
+                if (editSubjectName.trim()) {
+                    onUpdateSubject(subject.id, { name: editSubjectName });
+                    setEditingSubject(false);
+                }
+            };
+
+            const completedCount = subject.tasks.filter(t => t.completed).length;
+            const totalCount = subject.tasks.length;
+            const sortedTasks = sortTasks(subject.tasks);
+
+            return (
+                <div className="bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col">
+                    <div
+                        className="p-4 cursor-pointer hover:bg-slate-50 transition-colors"
+                        onClick={() => onToggle(subject.id)}
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3 flex-1">
+                                {subject.expanded ? <ChevronDown /> : <ChevronRight />}
+                                <div className={`w-3 h-3 rounded-full ${subject.color}`}></div>
+                                {editingSubject ? (
+                                    <input
+                                        type="text"
+                                        value={editSubjectName}
+                                        onChange={(e) => setEditSubjectName(e.target.value)}
+                                        onBlur={handleUpdateSubject}
+                                        onKeyPress={(e) => e.key === 'Enter' && handleUpdateSubject()}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="text-lg font-bold text-slate-800 border-b-2 border-blue-500 focus:outline-none"
+                                        autoFocus
+                                    />
+                                ) : (
+                                    <h3 className="text-lg font-bold text-slate-800">{subject.name}</h3>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingSubject(true);
+                                    }}
+                                    className="p-1 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded transition-colors"
+                                >
+                                    <Edit />
+                                </button>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (confirm(`Delete ${subject.name}?`)) {
+                                            onDeleteSubject(subject.id);
+                                        }
+                                    }}
+                                    className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                >
+                                    <Trash2 />
+                                </button>
+                            </div>
+                        </div>
+                        <p className="text-xs text-slate-500 ml-9">
+                            {completedCount}/{totalCount} tasks
+                        </p>
+                        <div className="w-full bg-slate-200 rounded-full h-1.5 mt-2 ml-9">
+                            <div
+                                className={`${subject.color} h-1.5 rounded-full transition-all`}
+                                style={{ width: `${totalCount > 0 ? (completedCount / totalCount) * 100 : 0}%` }}
+                            ></div>
+                        </div>
+                    </div>
+
+                    {subject.expanded && (
+                        <div className="px-4 pb-4 space-y-2 flex-1">
+                            {sortedTasks.map(task => (
+                                <TaskItem
+                                    key={task.id}
+                                    task={task}
+                                    subjectId={subject.id}
+                                    subjectColor={subject.color}
+                                    onToggle={() => onToggleTask(subject.id, task.id)}
+                                    onTogglePin={() => onTogglePin(subject.id, task.id)}
+                                    onUpdate={(updates) => onUpdateTask(subject.id, task.id, updates)}
+                                    onDelete={() => onDeleteTask(subject.id, task.id)}
+                                    compact={true}
+                                />
+                            ))}
+
+                            {showAddTask ? (
+                                <div className="bg-slate-50 rounded-lg p-3 space-y-2">
+                                    <input
+                                        type="text"
+                                        placeholder="Task title..."
+                                        value={newTaskTitle}
+                                        onChange={(e) => setNewTaskTitle(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && handleAddTask()}
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 text-sm"
+                                        autoFocus
+                                    />
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="date"
+                                            value={newTaskDate}
+                                            onChange={(e) => setNewTaskDate(e.target.value)}
+                                            className="flex-1 px-2 py-1 border border-slate-300 rounded text-xs focus:outline-none focus:border-blue-500"
+                                        />
+                                        <select
+                                            value={newTaskPriority}
+                                            onChange={(e) => setNewTaskPriority(e.target.value)}
+                                            className="px-2 py-1 border border-slate-300 rounded text-xs focus:outline-none focus:border-blue-500"
+                                        >
+                                            <option value="low">Low</option>
+                                            <option value="medium">Medium</option>
+                                            <option value="high">High</option>
+                                        </select>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={handleAddTask}
+                                            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-xs"
+                                        >
+                                            Add
+                                        </button>
+                                        <button
+                                            onClick={() => { setShowAddTask(false); setNewTaskTitle(''); setNewTaskDate(''); }}
+                                            className="px-3 py-1 bg-slate-200 text-slate-600 rounded hover:bg-slate-300 transition-colors text-xs"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => setShowAddTask(true)}
+                                    className="w-full text-left px-3 py-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all border border-dashed border-slate-200 flex items-center gap-2 text-sm"
+                                >
+                                    <Plus />
+                                    Add task
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function TaskItem({ task, subjectId, subjectColor, onToggle, onTogglePin, onUpdate, onDelete, compact = false }) {
+            const [editing, setEditing] = useState(false);
+            const [editTitle, setEditTitle] = useState(task.title);
+            const [editDate, setEditDate] = useState(task.dueDate);
+            const [editPriority, setEditPriority] = useState(task.priority);
+
+            const handleUpdate = () => {
+                onUpdate({ title: editTitle, dueDate: editDate, priority: editPriority });
+                setEditing(false);
+            };
+
+            const isOverdue = task.dueDate < new Date().toISOString().split('T')[0] && !task.completed;
+            
+            const priorityColors = {
+                high: 'text-red-600 bg-red-50',
+                medium: 'text-yellow-600 bg-yellow-50',
+                low: 'text-green-600 bg-green-50'
+            };
+
+            const formatDate = (dateString) => {
+                const date = new Date(dateString);
+                const today = new Date();
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                
+                if (dateString === today.toISOString().split('T')[0]) return 'Today';
+                if (dateString === tomorrow.toISOString().split('T')[0]) return 'Tomorrow';
+                
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            };
+
+            if (editing) {
+                return (
+                    <div className="bg-slate-50 rounded-lg p-3 space-y-2">
+                        <input
+                            type="text"
+                            value={editTitle}
+                            onChange={(e) => setEditTitle(e.target.value)}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 text-sm"
+                        />
+                        <div className="flex gap-2">
+                            <input
+                                type="date"
+                                value={editDate}
+                                onChange={(e) => setEditDate(e.target.value)}
+                                className="flex-1 px-2 py-1 border border-slate-300 rounded text-xs"
+                            />
+                            <select
+                                value={editPriority}
+                                onChange={(e) => setEditPriority(e.target.value)}
+                                className="px-2 py-1 border border-slate-300 rounded text-xs"
+                            >
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                        </div>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handleUpdate}
+                                className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs"
+                            >
+                                Save
+                            </button>
+                            <button
+                                onClick={() => setEditing(false)}
+                                className="px-3 py-1 bg-slate-200 text-slate-600 rounded hover:bg-slate-300 text-xs"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className={`flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 transition-colors ${task.completed ? 'opacity-50' : ''} ${compact ? 'text-sm' : ''}`}>
+                    <button onClick={onToggle} className="flex-shrink-0">
+                        {task.completed ? <CheckSquare /> : <Square />}
+                    </button>
+                    <span className={`flex-1 ${task.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                        {task.title}
+                    </span>
+                    <button
+                        onClick={onTogglePin}
+                        className={`flex-shrink-0 ${task.pinned ? 'text-yellow-500' : 'text-slate-300 hover:text-yellow-500'}`}
+                    >
+                        <Star filled={task.pinned} />
+                    </button>
+                    <span className={`text-xs px-2 py-0.5 rounded ${priorityColors[task.priority]}`}>
+                        {task.priority}
+                    </span>
+                    <span className={`text-xs px-2 py-0.5 rounded ${isOverdue ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-600'}`}>
+                        {formatDate(task.dueDate)}
+                    </span>
+                    <button
+                        onClick={() => setEditing(true)}
+                        className="p-1 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded transition-colors flex-shrink-0"
+                    >
+                        <Edit />
+                    </button>
+                    <button
+                        onClick={onDelete}
+                        className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors flex-shrink-0"
+                    >
+                        <Trash2 />
+                    </button>
+                </div>
+            );
+        }
+
+        function TimelineView({ tasks, sortBy, setSortBy, onToggleTask, onTogglePin, onUpdateTask, onDeleteTask, sortTasks }) {
+            const incompleteTasks = sortTasks(tasks.filter(t => !t.completed));
+            const completedTasks = tasks.filter(t => t.completed);
+
+            return (
+                <div className="space-y-4">
+                    <div className="bg-white rounded-2xl shadow-lg p-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <Filter />
+                                <h2 className="text-xl font-bold text-slate-800">All Tasks by {sortBy === 'dueDate' ? 'Due Date' : 'Priority'}</h2>
+                            </div>
+                            <button
+                                onClick={() => setSortBy(sortBy === 'dueDate' ? 'priority' : 'dueDate')}
+                                className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg font-medium transition-colors"
+                            >
+                                <ArrowUpDown />
+                                Sort by {sortBy === 'dueDate' ? 'Priority' : 'Due Date'}
+                            </button>
+                        </div>
+                        
+                        {incompleteTasks.length === 0 ? (
+                            <div className="text-center py-8 text-slate-400">
+                                <div className="flex justify-center mb-3"><CheckSquare /></div>
+                                <p>All caught up! No pending tasks.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                {incompleteTasks.map(task => (
+                                    <TimelineTaskItem
+                                        key={`${task.subjectId}-${task.id}`}
+                                        task={task}
+                                        onToggle={() => onToggleTask(task.subjectId, task.id)}
+                                        onTogglePin={() => onTogglePin(task.subjectId, task.id)}
+                                        onUpdate={(updates) => onUpdateTask(task.subjectId, task.id, updates)}
+                                        onDelete={() => onDeleteTask(task.subjectId, task.id)}
+                                    />
+                                ))}
+                            </div>
+                        )}
+
+                        {completedTasks.length > 0 && (
+                            <details className="mt-6">
+                                <summary className="cursor-pointer text-slate-500 hover:text-slate-700 font-medium">
+                                    Completed Tasks ({completedTasks.length})
+                                </summary>
+                                <div className="space-y-2 mt-3">
+                                    {completedTasks.map(task => (
+                                        <TimelineTaskItem
+                                            key={`${task.subjectId}-${task.id}`}
+                                            task={task}
+                                            onToggle={() => onToggleTask(task.subjectId, task.id)}
+                                            onTogglePin={() => onTogglePin(task.subjectId, task.id)}
+                                            onUpdate={(updates) => onUpdateTask(task.subjectId, task.id, updates)}
+                                            onDelete={() => onDeleteTask(task.subjectId, task.id)}
+                                        />
+                                    ))}
+                                </div>
+                            </details>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        function TimelineTaskItem({ task, onToggle, onTogglePin, onUpdate, onDelete }) {
+            const [editing, setEditing] = useState(false);
+            const [editTitle, setEditTitle] = useState(task.title);
+            const [editDate, setEditDate] = useState(task.dueDate);
+            const [editPriority, setEditPriority] = useState(task.priority);
+
+            const handleUpdate = () => {
+                onUpdate({ title: editTitle, dueDate: editDate, priority: editPriority });
+                setEditing(false);
+            };
+
+            const isOverdue = task.dueDate < new Date().toISOString().split('T')[0] && !task.completed;
+            
+            const priorityColors = {
+                high: 'text-red-600 bg-red-50 border-red-200',
+                medium: 'text-yellow-600 bg-yellow-50 border-yellow-200',
+                low: 'text-green-600 bg-green-50 border-green-200'
+            };
+
+            const formatDate = (dateString) => {
+                const date = new Date(dateString);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                date.setHours(0, 0, 0, 0);
+                
+                if (date.getTime() === today.getTime()) return 'Today';
+                if (date < today) return `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} (Overdue)`;
+                
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            };
+
+            if (editing) {
+                return (
+                    <div className="bg-slate-50 rounded-lg p-4 space-y-3 border-2 border-blue-200">
+                        <input
+                            type="text"
+                            value={editTitle}
+                            onChange={(e) => setEditTitle(e.target.value)}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500"
+                        />
+                        <div className="flex gap-2">
+                            <input
+                                type="date"
+                                value={editDate}
+                                onChange={(e) => setEditDate(e.target.value)}
+                                className="flex-1 px-3 py-2 border border-slate-300 rounded"
+                            />
+                            <select
+                                value={editPriority}
+                                onChange={(e) => setEditPriority(e.target.value)}
+                                className="px-3 py-2 border border-slate-300 rounded"
+                            >
+                                <option value="low">Low Priority</option>
+                                <option value="medium">Medium Priority</option>
+                                <option value="high">High Priority</option>
+                            </select>
+                        </div>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handleUpdate}
+                                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                            >
+                                Save
+                            </button>
+                            <button
+                                onClick={() => setEditing(false)}
+                                className="px-4 py-2 bg-slate-200 text-slate-600 rounded hover:bg-slate-300"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-all ${task.completed ? 'bg-slate-50 opacity-60' : isOverdue ? 'bg-red-50 border-red-200' : 'bg-white border-slate-200'}`}>
+                    <button onClick={onToggle} className="flex-shrink-0">
+                        {task.completed ? <CheckSquare /> : <Square />}
+                    </button>
+                    <div className="flex-1">
+                        <div className={`font-medium ${task.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                            {task.title}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                            <span className={`inline-block w-3 h-3 rounded-full ${task.subjectColor}`}></span>
+                            <span className="text-sm text-slate-500">{task.subjectName}</span>
+                        </div>
+                    </div>
+                    <button
+                        onClick={onTogglePin}
+                        className={`flex-shrink-0 ${task.pinned ? 'text-yellow-500' : 'text-slate-300 hover:text-yellow-500'}`}
+                    >
+                        <Star filled={task.pinned} />
+                    </button>
+                    <span className={`text-xs px-2 py-1 rounded border ${priorityColors[task.priority]}`}>
+                        {task.priority}
+                    </span>
+                    <span className={`text-sm font-medium px-3 py-1 rounded ${isOverdue ? 'bg-red-600 text-white' : 'bg-slate-600 text-white'}`}>
+                        {formatDate(task.dueDate)}
+                    </span>
+                    <button
+                        onClick={() => setEditing(true)}
+                        className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded transition-colors"
+                    >
+                        <Edit />
+                    </button>
+                    <button
+                        onClick={onDelete}
+                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                    >
+                        <Trash2 />
+                    </button>
+                </div>
+            );
+        }
+
+        function CalendarView({ tasks, events, onAddEvent, onDeleteEvent }) {
+            const [currentDate, setCurrentDate] = useState(new Date());
+            const [showAddEvent, setShowAddEvent] = useState(false);
+            const [newEventTitle, setNewEventTitle] = useState('');
+            const [newEventDate, setNewEventDate] = useState('');
+            const [newEventTime, setNewEventTime] = useState('');
+            const [selectedDate, setSelectedDate] = useState(null);
+
+            const getDaysInMonth = (date) => {
+                const year = date.getFullYear();
+                const month = date.getMonth();
+                const firstDay = new Date(year, month, 1);
+                const lastDay = new Date(year, month + 1, 0);
+                const daysInMonth = lastDay.getDate();
+                const startingDayOfWeek = firstDay.getDay();
+
+                const days = [];
+                for (let i = 0; i < startingDayOfWeek; i++) {
+                    days.push(null);
+                }
+                for (let i = 1; i <= daysInMonth; i++) {
+                    days.push(new Date(year, month, i));
+                }
+                return days;
+            };
+
+            const handleAddEvent = () => {
+                if (newEventTitle.trim() && newEventDate) {
+                    onAddEvent({
+                        title: newEventTitle,
+                        date: newEventDate,
+                        time: newEventTime
+                    });
+                    setNewEventTitle('');
+                    setNewEventDate('');
+                    setNewEventTime('');
+                    setShowAddEvent(false);
+                }
+            };
+
+            const getItemsForDate = (date) => {
+                if (!date) return { tasks: [], events: [] };
+                const dateStr = date.toISOString().split('T')[0];
+                const dayTasks = tasks.filter(t => t.dueDate === dateStr && !t.completed);
+                const dayEvents = events.filter(e => e.date === dateStr);
+                return { tasks: dayTasks, events: dayEvents };
+            };
+
+            const days = getDaysInMonth(currentDate);
+            const monthName = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            const today = new Date().toISOString().split('T')[0];
+
+            return (
+                <div className="bg-white rounded-2xl shadow-lg p-6">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-2xl font-bold text-slate-800">{monthName}</h2>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))}
+                                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                            >
+                                ←
+                            </button>
+                            <button
+                                onClick={() => setCurrentDate(new Date())}
+                                className="px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 rounded-lg transition-colors"
+                            >
+                                Today
+                            </button>
+                            <button
+                                onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))}
+                                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                            >
+                                →
+                            </button>
+                            <button
+                                onClick={() => setShowAddEvent(true)}
+                                className="px-4 py-2 bg-green-500 text-white hover:bg-green-600 rounded-lg transition-colors flex items-center gap-2"
+                            >
+                                <Plus />
+                                Add Event
+                            </button>
+                        </div>
+                    </div>
+
+                    {showAddEvent && (
+                        <div className="bg-slate-50 rounded-lg p-4 mb-4 space-y-3">
+                            <input
+                                type="text"
+                                placeholder="Event title..."
+                                value={newEventTitle}
+                                onChange={(e) => setNewEventTitle(e.target.value)}
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500"
+                            />
+                            <div className="flex gap-2">
+                                <input
+                                    type="date"
+                                    value={newEventDate}
+                                    onChange={(e) => setNewEventDate(e.target.value)}
+                                    className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500"
+                                />
+                                <input
+                                    type="time"
+                                    value={newEventTime}
+                                    onChange={(e) => setNewEventTime(e.target.value)}
+                                    className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500"
+                                />
+                            </div>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={handleAddEvent}
+                                    className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                                >
+                                    Add Event
+                                </button>
+                                <button
+                                    onClick={() => { setShowAddEvent(false); setNewEventTitle(''); setNewEventDate(''); setNewEventTime(''); }}
+                                    className="px-4 py-2 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-7 gap-2">
+                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                            <div key={day} className="text-center font-bold text-slate-600 py-2">
+                                {day}
+                            </div>
+                        ))}
+                        
+                        {days.map((day, index) => {
+                            if (!day) {
+                                return <div key={`empty-${index}`} className="aspect-square"></div>;
+                            }
+                            
+                            const dateStr = day.toISOString().split('T')[0];
+                            const isToday = dateStr === today;
+                            const { tasks: dayTasks, events: dayEvents } = getItemsForDate(day);
+                            const hasItems = dayTasks.length > 0 || dayEvents.length > 0;
+
+                            return (
+                                <div
+                                    key={day.toISOString()}
+                                    className={`aspect-square border-2 rounded-lg p-2 cursor-pointer transition-all ${
+                                        isToday ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-blue-300'
+                                    }`}
+                                    onClick={() => setSelectedDate(selectedDate === dateStr ? null : dateStr)}
+                                >
+                                    <div className={`text-sm font-medium ${isToday ? 'text-blue-600' : 'text-slate-700'}`}>
+                                        {day.getDate()}
+                                    </div>
+                                    {hasItems && (
+                                        <div className="mt-1 space-y-1">
+                                            {dayTasks.slice(0, 2).map(task => (
+                                                <div key={task.id} className={`text-xs truncate px-1 rounded ${task.subjectColor} text-white`}>
+                                                    {task.title}
+                                                </div>
+                                            ))}
+                                            {dayEvents.slice(0, 2).map(event => (
+                                                <div key={event.id} className="text-xs truncate px-1 rounded bg-purple-500 text-white">
+                                                    {event.title}
+                                                </div>
+                                            ))}
+                                            {(dayTasks.length + dayEvents.length > 2) && (
+                                                <div className="text-xs text-slate-500">+{dayTasks.length + dayEvents.length - 2} more</div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {selectedDate && (
+                        <div className="mt-6 bg-slate-50 rounded-lg p-4">
+                            <h3 className="text-lg font-bold text-slate-800 mb-3">
+                                {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                            </h3>
+                            
+                            {getItemsForDate(new Date(selectedDate)).tasks.length > 0 && (
+                                <div className="mb-4">
+                                    <h4 className="font-medium text-slate-700 mb-2">Tasks:</h4>
+                                    <div className="space-y-2">
+                                        {getItemsForDate(new Date(selectedDate)).tasks.map(task => (
+                                            <div key={task.id} className="flex items-center gap-2 bg-white rounded p-2">
+                                                <span className={`w-3 h-3 rounded-full ${task.subjectColor}`}></span>
+                                                <span className="flex-1">{task.title}</span>
+                                                <span className="text-xs text-slate-500">{task.subjectName}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {getItemsForDate(new Date(selectedDate)).events.length > 0 && (
+                                <div>
+                                    <h4 className="font-medium text-slate-700 mb-2">Events:</h4>
+                                    <div className="space-y-2">
+                                        {getItemsForDate(new Date(selectedDate)).events.map(event => (
+                                            <div key={event.id} className="flex items-center justify-between bg-white rounded p-2">
+                                                <div className="flex items-center gap-2">
+                                                    <Calendar />
+                                                    <span>{event.title}</span>
+                                                    {event.time && <span className="text-sm text-slate-500">{event.time}</span>}
+                                                </div>
+                                                <button
+                                                    onClick={() => onDeleteEvent(event.id)}
+                                                    className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded"
+                                                >
+                                                    <Trash2 />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {getItemsForDate(new Date(selectedDate)).tasks.length === 0 && getItemsForDate(new Date(selectedDate)).events.length === 0 && (
+                                <p className="text-slate-500 text-center py-4">No tasks or events for this day</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function AnalyticsView({ focusSessions }) {
+            const chartRef = useRef(null);
+            const chartInstance = useRef(null);
+            const [timeframe, setTimeframe] = useState('week'); // 'week' or 'month'
+
+            useEffect(() => {
+                if (chartRef.current) {
+                    if (chartInstance.current) {
+                        chartInstance.current.destroy();
+                    }
+
+                    const days = timeframe === 'week' ? 7 : 30;
+                    const dateRange = [];
+                    for (let i = days - 1; i >= 0; i--) {
+                        const date = new Date();
+                        date.setDate(date.getDate() - i);
+                        dateRange.push(date.toISOString().split('T')[0]);
+                    }
+
+                    const dailyTotals = dateRange.map(date => {
+                        const sessions = focusSessions.filter(s => s.date === date);
+                        return sessions.reduce((sum, s) => sum + s.duration, 0) / 60;
+                    });
+
+                    const ctx = chartRef.current.getContext('2d');
+                    chartInstance.current = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: dateRange.map(date => {
+                                const d = new Date(date);
+                                return timeframe === 'week' 
+                                    ? d.toLocaleDateString('en-US', { weekday: 'short' })
+                                    : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                            }),
+                            datasets: [{
+                                label: 'Focus Time (minutes)',
+                                data: dailyTotals,
+                                backgroundColor: 'rgba(99, 102, 241, 0.5)',
+                                borderColor: 'rgb(99, 102, 241)',
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: function(value) {
+                                            return value + ' min';
+                                        }
+                                    }
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            }
+                        }
+                    });
+                }
+
+                return () => {
+                    if (chartInstance.current) {
+                        chartInstance.current.destroy();
+                    }
+                };
+            }, [focusSessions, timeframe]);
+
+            const getTotalTime = (days) => {
+                const cutoff = new Date();
+                cutoff.setDate(cutoff.getDate() - days);
+                const cutoffStr = cutoff.toISOString().split('T')[0];
+                
+                return focusSessions
+                    .filter(s => s.date >= cutoffStr)
+                    .reduce((sum, s) => sum + s.duration, 0);
+            };
+
+            const getAveragePerDay = (days) => {
+                const total = getTotalTime(days);
+                return total / days;
+            };
+
+            const formatDuration = (seconds) => {
+                const hours = Math.floor(seconds / 3600);
+                const minutes = Math.floor((seconds % 3600) / 60);
+                return `${hours}h ${minutes}m`;
+            };
+
+            const todayTotal = getTotalTime(1);
+            const weekTotal = getTotalTime(7);
+            const monthTotal = getTotalTime(30);
+            const weekAvg = getAveragePerDay(7);
+            const monthAvg = getAveragePerDay(30);
+
+            return (
+                <div className="space-y-6">
+                    <div className="bg-white rounded-2xl shadow-lg p-6">
+                        <h2 className="text-2xl font-bold text-slate-800 mb-6">Focus Session Analytics</h2>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
+                                <div className="text-sm text-blue-600 font-medium mb-1">Today</div>
+                                <div className="text-2xl font-bold text-blue-600">{formatDuration(todayTotal)}</div>
+                            </div>
+                            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4">
+                                <div className="text-sm text-green-600 font-medium mb-1">This Week</div>
+                                <div className="text-2xl font-bold text-green-600">{formatDuration(weekTotal)}</div>
+                            </div>
+                            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4">
+                                <div className="text-sm text-purple-600 font-medium mb-1">This Month</div>
+                                <div className="text-2xl font-bold text-purple-600">{formatDuration(monthTotal)}</div>
+                            </div>
+                            <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4">
+                                <div className="text-sm text-orange-600 font-medium mb-1">Avg/Day (7d)</div>
+                                <div className="text-2xl font-bold text-orange-600">{formatDuration(weekAvg)}</div>
+                            </div>
+                            <div className="bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg p-4">
+                                <div className="text-sm text-pink-600 font-medium mb-1">Avg/Day (30d)</div>
+                                <div className="text-2xl font-bold text-pink-600">{formatDuration(monthAvg)}</div>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-bold text-slate-700">Focus Time Chart</h3>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setTimeframe('week')}
+                                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                                        timeframe === 'week'
+                                            ? 'bg-indigo-500 text-white'
+                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                    }`}
+                                >
+                                    7 Days
+                                </button>
+                                <button
+                                    onClick={() => setTimeframe('month')}
+                                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                                        timeframe === 'month'
+                                            ? 'bg-indigo-500 text-white'
+                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                    }`}
+                                >
+                                    30 Days
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="bg-slate-50 rounded-lg p-4" style={{ height: '400px' }}>
+                            <canvas ref={chartRef}></canvas>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-2xl shadow-lg p-6">
+                        <h3 className="text-lg font-bold text-slate-800 mb-4">Recent Sessions</h3>
+                        <div className="space-y-2">
+                            {focusSessions.slice(-10).reverse().map((session, index) => (
+                                <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                                    <div className="flex items-center gap-3">
+                                        <Clock />
+                                        <span className="text-slate-700">{new Date(session.timestamp).toLocaleString()}</span>
+                                    </div>
+                                    <span className="font-bold text-indigo-600">{formatDuration(session.duration)}</span>
+                                </div>
+                            ))}
+                            {focusSessions.length === 0 && (
+                                <p className="text-slate-500 text-center py-4">No focus sessions recorded yet. Start a session to track your study time!</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<StudentPlanner />, document.getElementById('root'));
+    </script>
+</body>
+</html>
