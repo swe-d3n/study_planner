@@ -6,10 +6,12 @@ An app i vibecoded to help me keep track of my work
 
 ## Updates
 
-1.0.1 - bugfixes
+1\.0\.1 - bugfixes
 - Replaced `setInterval` with `Date.now()` timestamp calculations
 - focus timer no longer stops running when window is minimized
-1.0.0 - Created Study Planner
+
+1\.0\.0 - Created Study Planner
+
 
 
 ## Quick Start
