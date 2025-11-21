@@ -6,6 +6,11 @@ An app i vibecoded to help me keep track of my work
 
 ## Updates
 
+1\.0\.3 - TBD - bugfixes + minor features
+- Fix wrong overdue counter (timezone error)
+- Add focus session timer to Analytics Tab
+- Increase number of tasks displayed in calendar (currently 2)
+
 1\.0\.2 - 2025/11/20 - bugfixes
 
 - Fixed timezone issues, timezone now matches system
