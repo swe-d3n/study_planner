@@ -1,6 +1,6 @@
 # Study Planner - Desktop App
 
-An app i vibecoded to help me keep track of my work
+An app partly vibecoded to keep track of upcoming tasks and study time
 
 ---
 
