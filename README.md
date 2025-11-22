@@ -6,11 +6,18 @@ An app i vibecoded to help me keep track of my work
 
 ## Updates
 
-1\.0\.3 - TBD - bugfixes + minor features
-- Fix wrong overdue counter (timezone error)
-- Add focus session timer to Analytics Tab
+Future Updates
+
 - Increase number of tasks displayed in calendar (currently 2)
-- Save's timer when you switch tabs, add delete time button
+- Add delete time feature
+- Add collaborative Teams
+- Add separate window for timer
+- Add daily to do (separate from tasks, for reoccuring tasks)
+
+1\.0\.3 - 2025/11/21 - bugfixes + minor features
+- Fixed wrong overdue counter (timezone error)
+- Re Added focus session timer to all tabs
+- Save's timer when you switch tabs
 
 1\.0\.2 - 2025/11/20 - bugfixes
 
